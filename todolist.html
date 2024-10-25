@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="css/todolist.css">
+    <style>
+    </style>
+</head>
+<body>
+    <div style="display: block;"></div>
+        <h1>to do list</h1>
+        <div class="box1">
+            <div class="boxIpt clearfix">
+                <input type="checkbox" class="checkAll">
+                <input type="text" class="ipt" placeholder="请输入任务清单">
+                <button class="sendBtn">发送</button>
+            </div>
+            <div class="list">
+                <ul class="duties">
+                    <li class="li checkStyle">
+                        <input type="checkbox" id="l1" checked>
+                        <label for="l1"> 一条留言</label>
+                        <button class="dele">删除</button>
+                    </li>
+                    <li class="li">
+                        <input type="checkbox" id="l1">
+                        <label for="l1"> 两条留言</label>
+                        <button class="dele">删除</button>
+                    </li>
+                </ul>
+            </div>
+            <div class="control">
+                <span class="rest">0 item left</span>
+                <button class="leftAll">All</button>
+                <button class="leftAct">Active</button>
+                <button class="leftCom">Completed</button>
+                <button class="ClearCom">Clear completed</button>
+            </div>
+        </div>
+</body>
+<!-- 
+    https://todomvc.com/examples/vanillajs/
+    todolist功能:
+    1. 添加计划（更新到本地存储）--回车确定                  √
+    2. 删除计划                                            √
+    3. 修改单选框选中状态，添加完成状态样式（更新到本地存储）  √
+    4. 一键全选计划；                                       √
+    5. 显示剩余几条计划未完成;                               √
+    6. 点击显示全部计划；                                   √
+    7. 点击显示全部完成计划；                                √
+    8. 点击清除已经完成的计划；                              √
+    9. 屏幕大小的适配;
+    
+ -->
+<script>
+    let sendBtn = document.querySelector('.sendBtn');
+    let iptMsg = document.querySelector('.ipt');
+    let duties = document.querySelector('.duties');
+    let checkAllBtn = document.querySelector('.checkAll');
+    let restNum =document.querySelector('.rest');
+    let leftAllBtn = document.querySelector('.leftAll');
+    let leftActBtn = document.querySelector('.leftAct');
+    let leftComBtn = document.querySelector('.leftCom');
+    let clearComBtn = document.querySelector('.ClearCom');
+    let msgAry = 
+    [{id : new Date('2012-12-12'),title:'一条留言',completed:true,display:true}
+    ,{id : new Date('2012-12-22'),title:'两条留言',completed:false,display:true}];
+    local();
+    loadList();
+    // 触发- 修改数组
+    sendBtn.addEventListener('click',()=>{
+        if(iptMsg.value!==''){
+            msgAry.push({id : new Date(),title:iptMsg.value,completed:false,display:true});
+            loadList();
+            iptMsg.value = ''; 
+        }
+    })
+    document.addEventListener('keydown',(e)=>{
+        if(e.keyCode ==13 && iptMsg.value!==''){
+            msgAry.push({id : new Date(),title:iptMsg.value,completed:false,display:true});
+            loadList();
+            iptMsg.value = ''; 
+        };
+    })
+    // 一   = >   多
+    checkAllBtn.addEventListener('click',(e)=>{
+        msgAry.forEach((v,i)=>{
+            v.completed = checkAllBtn.checked;
+        })
+        loadList()
+    })
+    leftActBtn.addEventListener('click',(v,i)=>{
+        leftAct();
+    })
+    leftComBtn.addEventListener('click',(v,i)=>{
+        leftCom();
+    })
+    leftAllBtn.addEventListener('click',(v,i)=>{
+        leftAll();
+    })
+    clearComBtn.addEventListener('click',(v,i)=>{
+        clearCom();
+        actLeftNum()
+    })
+    // 修改页面结构
+    function loadList(){
+        let strAry='';
+        msgAry.forEach((v,i)=>{
+            let {id,title,completed,display}=v;
+            strAry += 
+            `
+            <li class="li ${completed ? 'checkStyle' : '' }" style="display: ${display ? 'grid' : 'none'};">
+                        <input type="checkbox" id="l${i}" ${completed ? 'checked' : '' } onchange=changeStyle(this,${i})>
+                        <label for="l${i}">${title}</label>
+                        <button class="dele" onclick=remove(${i})>删除</button>
+            </li>
+            `
+        })
+        // console.log(strAry);
+        duties.innerHTML= strAry;
+        localStorage.setItem('listJson',JSON.stringify(msgAry));
+        actLeftNum();
+    }
+    // 删除按钮
+    function remove(index){
+        msgAry.splice(index,1);
+        loadList()
+        actLeftNum()
+    }
+    // 修改input 更换样式 / 单个check影响全选按钮;     // 多  = >  一
+    function changeStyle(_this,i){
+        // console.log(_this.parentElement);
+        msgAry[i].completed  =_this.checked;
+        loadList();
+        let allChecks = duties.children;
+        let flag=false;
+        for( let v  of msgAry){
+            if(v.completed ){
+                flag = true;
+            }else{
+                flag = false;
+                break;
+            }
+        }
+        if(flag){
+            checkAllBtn.checked=true;
+        }else{
+            checkAllBtn.checked=false;
+        }
+    }
+    // 本地存储
+    function local(){
+        if(localStorage.getItem('listJson')){
+            msgAry=JSON.parse(localStorage.getItem('listJson'));
+        }
+    }
+    // 未完成项目
+    function actLeftNum(){
+        let actlistAry =msgAry.filter((v,i)=>{
+            return v.completed == false;
+        }) ;
+        let items = actlistAry.length;
+        restNum.innerHTML = `${items} item left`;
+    }
+    // 保留未完成列表
+    function leftAct(){
+        msgAry.forEach((v,i)=>{
+            v.display=true;
+            console.log(v.completed);
+            if(v.completed){
+                v.display=false;
+                console.log(v);
+            }
+        })
+        loadList();
+    }
+    // 保留完成列表
+    function leftCom(){
+        msgAry.forEach((v,i)=>{
+            v.display=true;
+            console.log(v.completed);
+            if(!v.completed){
+                v.display=false;
+                console.log(v);
+            }
+        })
+        loadList();
+    }
+    function leftAll(){
+        msgAry.forEach((v,i)=>{
+            v.display=true;
+        })
+        loadList();
+    }
+    function clearCom(){
+         /* 
+         注释部分失败的原因: 
+         msgAry经过splice处理后i值对应的li是发生了改变的:
+         解决方法:
+         (1)不传入_this指代,
+         (2)不经过i删除,直接通过filter筛选)
+         msgAry.forEach((v,i)=>{
+            if(v.completed == true){
+                msgAry.splice(i,1);
+                console.log(v,i);
+            }
+            // console.log(msgAry);
+        });
+         */
+        msgAry = msgAry.filter((v,i)=>{
+            return v.completed == false
+        })
+        loadList();
+    }
+</script>
+</html>
+ <!-- 
+    1个思路:控制所有的子元素包括后期新增的元素;
+    获取completed值为false的所有ary->newAry
+    统计newAry 对象的个数;
+    1. 点击all 所有li的display 设置为block;
+    2. 点击active 所有newLI的display 设置为block;
+    2.1 思路: 给对象添加一个新的值,该值为true则显示,否则影藏; 数组 ==> 页面
+    2.2 思路: 点击active 后 遍历所有的li的completed,true 则显示否则隐藏  ;直接操控页面; 不可行(页面刷新之后(点击其他按钮之后)显示隐藏需要重新更新);
+     function leftAct(){
+        msgAry.forEach((v,i)=>{
+            duties.children[i].style.display='block';
+            if(v.completed){
+                duties.children[i].style.display='none';
+            }
+        })
+    }
+    2.3 思路:不给对象添加新的值? 遍历所有的数组,对象completed的值为true则显示;
+    function leftAct(){
+        msgAry.forEach((v,i)=>{
+            duties.children[i].style.display='block';
+            if(v.completed){
+                duties.children[i].style.display='none';
+            }
+        })
+    }
+    1. 为什么更新后,样式也得以保留,样式管理到了数组中的completed的值
+    2. 直接修改的话,每一次更新没有保留display的属性值,需要数组中有个之与之相关联;
+        - 关联一 :  completed ==> if completed==>额外添加一个属性值;
+
+    最后的问题:
+    1. 修改display属性值,布局发生了改变?
+    原因: display:grid ;与display:block 冲突
+    解决办法: display 显示的时候将block 替换为 grid;
+-->
